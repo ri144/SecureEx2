@@ -1,5 +1,8 @@
 package byAJ.Securex.configs;
 
+import byAJ.Securex.Services.SSUserDetailsService;
+import byAJ.Securex.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -18,7 +21,12 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter{
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                .authorizeRequests().anyRequest().authenticated();
+                .authorizeRequests()
+                .antMatchers("/", "/books/list", "/css/**").permitAll()
+                .antMatchers("/books/edit/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+                .and().formLogin().loginPage("/login").permitAll();
+
         http
                 .formLogin().failureUrl("/login?error")
                 .defaultSuccessUrl("/")
@@ -29,8 +37,24 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter{
                 .permitAll();
     }
 
-    @Override
+    /*@Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.inMemoryAuthentication().withUser("user").password("password").roles("USER");
+        auth.inMemoryAuthentication().withUser("dave").password("begreat").roles("USER");
+        auth.inMemoryAuthentication().withUser("fi").password("becold").roles("USER");
+        auth.inMemoryAuthentication().withUser("root").password("root").roles("ADMIN");
+    }*/
+
+    @Autowired private UserRepository userRepository;
+
+    @Override
+    public UserDetailsService userDetailsServiceBean() throws Exception {
+        return new SSUserDetailsService(userRepository);
     }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception{
+        auth.userDetailsService(userDetailsServiceBean());
+    }
+
 }
